@@ -1,0 +1,16 @@
+universe: sp100
+start_date: "2015-01-01"
+end_date: "2026-07-01"
+forward_return_horizon: 5
+n_random_search_iters: 500
+n_bayesian_iters: 200
+random_seed: 42
+
+# Chronological model-development split. Search uses training performance,
+# selection uses validation performance, and winners alone reach the test set.
+train_fraction: 0.60
+validation_fraction: 0.20
+test_fraction: 0.20
+
+# Linear implementation-cost scenario per unit of daily L1 turnover.
+transaction_cost_bps: 5.0

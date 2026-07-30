@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.cache/
+*.py[cod]
+.DS_Store
+.Rhistory
+data/raw/*.parquet
+data/processed/*.parquet
+trajectory_db.parquet
+trajectory_bayesian.parquet
+trajectory_combined.parquet
+out_of_sample_results.parquet
+.timing_*.parquet
+
+# Report figures are portfolio artifacts and should be committed with REPORT.md.

@@ -191,20 +191,26 @@ def _cache_is_fresh(path: Path) -> bool:
     return path.exists() and time.time() - path.stat().st_mtime < CACHE_MAX_AGE_SECONDS
 
 
-def download_universe(tickers: Iterable[str], start: str, end: str) -> None:
-    """Download one adjusted OHLCV parquet per ticker, with retry/backoff."""
+def download_universe(
+    tickers: Iterable[str], start: str, end: str, *, raw_dir: Path = RAW_DIR
+) -> None:
+    """Download one adjusted OHLCV parquet per ticker, with retry/backoff.
+
+    ``raw_dir`` lets callers stage an independent panel (for example a
+    post-study forward-test window) without disturbing the frozen study cache.
+    """
     try:
         import yfinance as yf
     except ImportError as exc:  # pragma: no cover - depends on optional network stack
         raise RuntimeError("Install project dependencies before downloading data") from exc
 
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    raw_dir.mkdir(parents=True, exist_ok=True)
     ticker_list = tuple(dict.fromkeys(tickers))
     if not ticker_list:
         raise ValueError("tickers must not be empty")
     failures: list[str] = []
     for ticker in ticker_list:
-        path = RAW_DIR / f"{ticker}.parquet"
+        path = raw_dir / f"{ticker}.parquet"
         if _cache_is_fresh(path):
             continue
         for attempt in range(MAX_DOWNLOAD_ATTEMPTS):
@@ -254,9 +260,9 @@ def _load_field(files: Iterable[Path], field: str) -> pd.DataFrame:
     return pd.concat(series.values(), axis=1).sort_index()
 
 
-def build_panel() -> None:
+def build_panel(*, raw_dir: Path = RAW_DIR, processed_dir: Path = PROCESSED_DIR) -> None:
     """Align raw ticker files and write clean close, return, and volume panels."""
-    files = sorted(RAW_DIR.glob("*.parquet"))
+    files = sorted(raw_dir.glob("*.parquet"))
     if not files:
         raise RuntimeError("No raw parquet files found; run download_universe first")
 
@@ -275,10 +281,10 @@ def build_panel() -> None:
     prices, volume = prices.loc[:, keep], volume.loc[:, keep]
     returns = prices.pct_change(fill_method=None)
 
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    prices.to_parquet(PROCESSED_DIR / "prices.parquet")
-    returns.to_parquet(PROCESSED_DIR / "returns.parquet")
-    volume.to_parquet(PROCESSED_DIR / "volume.parquet")
+    processed_dir.mkdir(parents=True, exist_ok=True)
+    prices.to_parquet(processed_dir / "prices.parquet")
+    returns.to_parquet(processed_dir / "returns.parquet")
+    volume.to_parquet(processed_dir / "volume.parquet")
 
 
 def _max_missing_run(series: pd.Series) -> int:

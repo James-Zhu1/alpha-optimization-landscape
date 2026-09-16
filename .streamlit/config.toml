@@ -1,0 +1,11 @@
+# Keeps the deployed explorer readable on a recruiter's first click: no
+# developer chrome, and a theme that matches the report figures.
+[theme]
+base = "light"
+primaryColor = "#2b6cb0"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

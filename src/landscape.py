@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.cluster import HDBSCAN, AgglomerativeClustering, KMeans
 from sklearn.decomposition import PCA
 
 
@@ -80,11 +80,9 @@ def run_clustering(
         "kmeans": KMeans(n_clusters=k, random_state=42, n_init=20).fit_predict(values),
         "agglomerative": AgglomerativeClustering(n_clusters=k).fit_predict(values),
     }
-    try:
-        import hdbscan
-
-        min_cluster_size = min(max(5, values.shape[0] // 20), max(2, values.shape[0] - 1))
-        labels["hdbscan"] = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size).fit_predict(values)
-    except ImportError:  # Keep PCA/KMeans/Agglomerative usable in a minimal environment.
-        labels["hdbscan"] = np.full(values.shape[0], -1, dtype=int)
+    # scikit-learn has shipped HDBSCAN since 1.3, so the density-based view needs
+    # no compiled third-party package. That keeps the hosted dashboard installable
+    # from wheels alone.
+    min_cluster_size = min(max(5, values.shape[0] // 20), max(2, values.shape[0] - 1))
+    labels["hdbscan"] = HDBSCAN(min_cluster_size=min_cluster_size).fit_predict(values)
     return labels

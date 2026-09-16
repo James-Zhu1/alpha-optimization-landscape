@@ -42,9 +42,8 @@ def _write_holdout(path, optimizers=("bayesian", "random"), lookback=20):
 def frozen_study(tmp_path, monkeypatch):
     """Point the module at a synthetic study boundary and holdout result."""
     holdout_path = _write_holdout(tmp_path / "out_of_sample_results.parquet")
-    monkeypatch.setattr(forward_test, "OUT_OF_SAMPLE_PATH", holdout_path)
     monkeypatch.setattr(forward_test, "study_boundary", lambda: BOUNDARY)
-    return tmp_path
+    return holdout_path
 
 
 def test_converged_optimizers_collapse_to_one_scored_candidate(tmp_path):
@@ -72,7 +71,9 @@ def test_distinct_winners_are_scored_separately(tmp_path):
 
 def test_forward_window_excludes_every_study_date(frozen_study):
     results = evaluate_forward_window(
-        panels=_panels(), output_path=frozen_study / "forward.parquet"
+        panels=_panels(),
+        holdout_path=frozen_study,
+        output_path=frozen_study.parent / "forward.parquet",
     )
     assert len(results) == 1
     # The whole point of the harness: nothing at or before the boundary is scored.
@@ -83,7 +84,9 @@ def test_warmup_history_is_used_but_not_scored(frozen_study):
     """A 20-day lookback must not shrink the forward window by 20 observations."""
     prices, returns, volume = _panels()
     results = evaluate_forward_window(
-        panels=(prices, returns, volume), output_path=frozen_study / "forward.parquet"
+        panels=(prices, returns, volume),
+        holdout_path=frozen_study,
+        output_path=frozen_study.parent / "forward.parquet",
     )
     available = int((returns.index > BOUNDARY).sum())
     scored = int(results.loc[0, "forward_n_observations"])
@@ -93,7 +96,9 @@ def test_warmup_history_is_used_but_not_scored(frozen_study):
 
 def test_short_window_reports_insufficient_power(frozen_study):
     results = evaluate_forward_window(
-        panels=_panels(), output_path=frozen_study / "forward.parquet"
+        panels=_panels(),
+        holdout_path=frozen_study,
+        output_path=frozen_study.parent / "forward.parquet",
     )
     width = float(results.loc[0, "forward_sharpe_ci_width"])
     lower = float(results.loc[0, "forward_sharpe_ci_lower"])
@@ -104,7 +109,9 @@ def test_short_window_reports_insufficient_power(frozen_study):
 
 def test_costs_never_improve_the_forward_result(frozen_study):
     results = evaluate_forward_window(
-        panels=_panels(), output_path=frozen_study / "forward.parquet"
+        panels=_panels(),
+        holdout_path=frozen_study,
+        output_path=frozen_study.parent / "forward.parquet",
     )
     sensitivity = json.loads(str(results.loc[0, "cost_sensitivity"]))
     by_cost = [sensitivity[key] for key in sorted(sensitivity, key=float)]
@@ -120,7 +127,9 @@ def test_power_verdict_escalates_with_evidence():
 
 def test_summary_states_the_interval_and_its_limits(frozen_study):
     results = evaluate_forward_window(
-        panels=_panels(), output_path=frozen_study / "forward.parquet"
+        panels=_panels(),
+        holdout_path=frozen_study,
+        output_path=frozen_study.parent / "forward.parquet",
     )
     summary = format_summary(results)
     assert "95% interval" in summary

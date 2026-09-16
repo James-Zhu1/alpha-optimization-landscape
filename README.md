@@ -1,5 +1,9 @@
 # Mapping the Optimization Landscape of Quantitative Alpha Discovery
 
+[![CI](https://github.com/James-Zhu1/alpha-optimization-landscape/actions/workflows/ci.yml/badge.svg)](https://github.com/James-Zhu1/alpha-optimization-landscape/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 > A quantitative research case study on a question that matters in practice: when an alpha search produces a strong backtest, is it a stable result or simply the best outcome from many noisy trials?
 
 I built an end-to-end research system that generates interpretable cross-sectional equity signals, evaluates them under a common backtest, records the full search trajectory, and maps the resulting parameter space with PCA, UMAP, and clustering. I then subjected the selected candidates to chronological holdout testing, transaction costs, block-bootstrap uncertainty, and a multiple-testing adjustment.
@@ -7,6 +11,13 @@ I built an end-to-end research system that generates interpretable cross-section
 The main result is intentionally sober: the best candidate retained a **0.553 gross Sharpe** on the untouched test period, but fell to **0.058 net Sharpe at 5 bps per unit turnover**. Its 95% moving-block bootstrap interval was **[-0.425, 1.498]**. I would not treat this as a defensible trading edge.
 
 That rejection is the point of the project. It demonstrates a research process designed to challenge an attractive result rather than promote it.
+
+**Every number above is checkable without running anything.** All 700 evaluations, the holdout audit, and the forward test are committed under [`results/`](results/) as Parquet, so a reader can verify the published figures directly:
+
+```python
+import pandas as pd
+pd.read_parquet("results/out_of_sample_results.parquet")[["test_sharpe", "test_net_sharpe"]]
+```
 
 ## Project at a glance
 
@@ -21,6 +32,7 @@ That rejection is the point of the project. It demonstrates a research process d
 | Selected expression | Unnormalized 120-day volume ratio, selected independently by both optimizers |
 | Held-out result | 0.553 gross Sharpe; 0.058 net Sharpe at 5 bps/unit turnover |
 | Research decision | Reject evidence of a statistically and economically reliable edge |
+| Continuing audit | Rerunnable forward test on post-study data, reported with explicit power limits |
 
 ![Held-out transaction-cost sensitivity](figures/holdout_cost_sensitivity.png)
 
@@ -94,6 +106,20 @@ My decision would be to stop here rather than advance the signal toward producti
 
 For the complete interpretation, see the [research report](REPORT.md). For interactive inspection, launch the Streamlit landscape explorer.
 
+## Keeping the conclusion honest as time passes
+
+The study's holdout ends at the configured `end_date`. Everything after that boundary is the only genuinely out-of-time evidence the selected expression can have: it did not exist when the signal was searched, chosen, or audited.
+
+`python -m src.forward_test --refresh` stages that window in an isolated cache, rebuilds a panel with the study's own construction rules, and scores the frozen expression on post-boundary dates only. The study cache is never written to, so the published experiment stays reproducible no matter how often the audit runs. Nothing in the harness selects, tunes, or reranks — that is what keeps it an audit rather than a second experiment, and what stops it from becoming the multiple-testing failure the study exists to demonstrate.
+
+The first window is deliberately reported as inconclusive:
+
+| Forward window | Observations | Gross Sharpe | Net Sharpe | 95% interval |
+|---|---:|---:|---:|---:|
+| 2026-07-01 to 2026-09-15 | 49 | 0.442 | -0.062 | [-2.897, 3.207] |
+
+Ten non-overlapping observations cannot support a Sharpe claim, so the harness computes that verdict itself rather than leaving a reader to infer it. Results carry their own power statement, and the window widens on every rerun. See [FORWARD_TEST.md](FORWARD_TEST.md).
+
 ## Skills demonstrated
 
 - **Quantitative research design:** chronological selection protocol, purged boundaries, explicit timing assumptions, and honest holdout use.
@@ -101,20 +127,23 @@ For the complete interpretation, see the [research report](REPORT.md). For inter
 - **Optimization:** reproducible random search and Optuna TPE search over the same discrete expression space, with duplicate pruning and crash-safe logging.
 - **Statistical analysis:** moving-block bootstrap, probabilistic/deflated Sharpe diagnostics, and careful treatment of overlapping returns.
 - **Unsupervised learning:** standardized mixed-feature encoding, PCA, UMAP, KMeans, agglomerative clustering, HDBSCAN, NMI, purity, and pairwise-distance analysis.
-- **Research engineering:** typed Python modules, configuration validation, Parquet artifacts, deterministic seeds, tests, linting, static type checks, and an interactive dashboard.
+- **Research engineering:** typed Python modules, configuration validation, committed Parquet evidence, deterministic seeds, 21 tests, linting, strict static type checks, continuous integration, and an interactive dashboard.
 - **Research judgment:** separating an attractive gross backtest from evidence strong enough to support a trading claim.
 
 ## Repository guide
 
 | Path | What it shows |
 |---|---|
-| [`REPORT.md`](REPORT.md) | Recruiter-friendly findings, interpretation, limitations, and decision |
+| [`REPORT.md`](REPORT.md) | Findings, interpretation, limitations, and the research decision |
+| [`FORWARD_TEST.md`](FORWARD_TEST.md) | Living audit of the frozen signal on data after the study window |
 | [`src/backtest.py`](src/backtest.py) | Signal timing, unit-gross portfolio construction, metrics, costs, and bootstrap logic |
 | [`src/search.py`](src/search.py) | Chronological splits, random/Bayesian search, selection, and one-time holdout audit |
 | [`src/trajectory.py`](src/trajectory.py) | Candidate-expression encoding and feature standardization |
 | [`src/landscape.py`](src/landscape.py) | PCA, UMAP, and three clustering methods |
+| [`src/forward_test.py`](src/forward_test.py) | Rerunnable post-study audit with an explicit statistical-power verdict |
 | [`src/report.py`](src/report.py) | Data-driven analysis, figures, and report generation |
 | [`src/dashboard.py`](src/dashboard.py) | Interactive landscape, filters, search progress, and diagnostics |
+| [`results/`](results/) | Committed Parquet evidence: every evaluation, the holdout audit, and the forward test |
 | [`tests/`](tests/) | Synthetic checks for the research assumptions most likely to create false alpha |
 | [`notebooks/01_explore_trajectories.ipynb`](notebooks/01_explore_trajectories.ipynb) | Short reader-oriented walkthrough of the saved search artifacts |
 
@@ -141,6 +170,9 @@ python -m src.search combine
 python -m src.search holdout --trajectory results/trajectory_combined.parquet
 python -m src.report --trajectory results/trajectory_combined.parquet
 streamlit run streamlit_app.py
+
+# Audit the frozen winner on data published after the study window.
+python -m src.forward_test --refresh
 ```
 
 Configuration lives in [`config.yaml`](config.yaml). Generated data and trajectory files are intentionally excluded from version control; the report contains the portfolio-level evidence and conclusions.

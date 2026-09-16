@@ -1,0 +1,43 @@
+name: CI
+
+# The research claims in REPORT.md rest on the timing, purging, and cost logic
+# in src/. This workflow re-checks that logic on every push so the published
+# numbers stay backed by code that demonstrably runs.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[test]'
+
+      - name: Lint
+        run: python -m ruff check src tests
+
+      - name: Type-check
+        run: python -m mypy src
+
+      # The suite builds its own synthetic panels, so it needs no market data
+      # and makes no network calls.
+      - name: Test
+        run: python -m pytest -q

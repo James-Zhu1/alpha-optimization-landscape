@@ -352,11 +352,15 @@ def main() -> None:
         selected_id = st.session_state.get("selected_alpha_id", available_ids[0])
         if selected_id not in available_ids:
             selected_id = available_ids[0]
-        selected_id = st.selectbox(
-            "Inspect evaluation",
-            available_ids,
-            index=available_ids.index(selected_id),
-            format_func=lambda value: visible.set_index("row_id").at[value, "expression_label"],
+        # Built once rather than per option: format_func runs for every entry.
+        labels = visible.set_index("row_id")["expression_label"]
+        selected_id = str(
+            st.selectbox(
+                "Inspect evaluation",
+                available_ids,
+                index=available_ids.index(selected_id),
+                format_func=lambda value: str(labels.at[value]),
+            )
         )
         st.session_state["selected_alpha_id"] = selected_id
         _render_selected_alpha(visible, selected_id)

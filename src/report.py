@@ -166,7 +166,7 @@ def _panel_description() -> str:
 
 def _optimizer_summary_lines(summary: pd.DataFrame) -> str:
     return "\n".join(
-        f"- **{name.title()} search:** {int(row['count'])} evaluations; "
+        f"- **{str(name).title()} search:** {int(row['count'])} evaluations; "
         f"mean validation Sharpe {row['mean']:.3f}, median {row['median']:.3f}, "
         f"best {row['max']:.3f}."
         for name, row in summary.iterrows()
@@ -262,7 +262,7 @@ def generate_report(
             axis.text(
                 column_index,
                 row_index,
-                str(int(cross_tab.iloc[row_index, column_index])),
+                f"{cross_tab.iloc[row_index, column_index]:.0f}",
                 ha="center",
                 va="center",
             )

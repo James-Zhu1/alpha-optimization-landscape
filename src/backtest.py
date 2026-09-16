@@ -8,6 +8,7 @@ holdout, cost, and uncertainty analysis.
 
 from __future__ import annotations
 
+import math
 import time
 from collections.abc import Mapping
 from statistics import NormalDist
@@ -17,6 +18,17 @@ import numpy as np
 import pandas as pd
 
 TRADING_DAYS = 252
+
+
+def _as_float(value: Any) -> float:
+    """Narrow a pandas reduction to float.
+
+    pandas types its reductions as a broad scalar union covering datetimes and
+    strings. Every reduction here is taken over a float series, so the value is
+    always numeric; this keeps that fact in one place instead of scattering
+    casts through the metric code.
+    """
+    return float(value)
 
 
 class BacktestResult(TypedDict):
@@ -62,10 +74,10 @@ def sharpe_statistics(
 ) -> dict[str, float]:
     """Return sample moments and the probabilistic Sharpe ratio."""
     observations = portfolio_returns.dropna()
-    volatility = float(observations.std(ddof=1))
-    periodic_sharpe = float(observations.mean() / volatility) if volatility > 0 else np.nan
-    skewness = float(observations.skew())
-    kurtosis = float(observations.kurt() + 3.0)  # pandas reports excess kurtosis.
+    volatility = _as_float(observations.std(ddof=1))
+    periodic_sharpe = _as_float(observations.mean()) / volatility if volatility > 0 else np.nan
+    skewness = _as_float(observations.skew())
+    kurtosis = _as_float(observations.kurt()) + 3.0  # pandas reports excess kurtosis.
     benchmark = benchmark_annualized_sharpe / np.sqrt(TRADING_DAYS / horizon)
     return {
         "skewness": skewness,
@@ -82,14 +94,14 @@ def expected_maximum_sharpe(trial_sharpes: pd.Series) -> float:
     n_trials = len(values)
     if n_trials < 2:
         return 0.0
-    sharpe_std = float(values.std(ddof=1))
+    sharpe_std = _as_float(values.std(ddof=1))
     if not np.isfinite(sharpe_std) or sharpe_std == 0:
         return 0.0
     euler_gamma = 0.5772156649015329
     normal = NormalDist()
     expected_standard_max = (1 - euler_gamma) * normal.inv_cdf(1 - 1 / n_trials)
-    expected_standard_max += euler_gamma * normal.inv_cdf(1 - 1 / (n_trials * np.e))
-    return float(values.mean() + sharpe_std * expected_standard_max)
+    expected_standard_max += euler_gamma * normal.inv_cdf(1 - 1 / (n_trials * math.e))
+    return _as_float(values.mean()) + sharpe_std * expected_standard_max
 
 
 def net_portfolio_returns(
@@ -172,7 +184,7 @@ def max_drawdown(portfolio_returns: pd.Series) -> float:
     initial = pd.Series([1.0], index=["initial"])
     wealth = pd.concat([initial, wealth.reset_index(drop=True)])
     drawdown = wealth.div(wealth.cummax()) - 1.0
-    return float(-drawdown.min()) if not drawdown.empty else np.nan
+    return -_as_float(drawdown.min()) if not drawdown.empty else np.nan
 
 
 def _metrics(portfolio_returns: pd.Series, horizon: int) -> dict[str, float]:
@@ -185,8 +197,8 @@ def _metrics(portfolio_returns: pd.Series, horizon: int) -> dict[str, float]:
             "annualized_volatility": np.nan,
         }
     periods_per_year = TRADING_DAYS / horizon
-    mean = float(observations.mean())
-    volatility = float(observations.std(ddof=1))
+    mean = _as_float(observations.mean())
+    volatility = _as_float(observations.std(ddof=1))
     downside = observations.clip(upper=0.0)
     downside_deviation = float(np.sqrt(np.mean(np.square(downside))))
     sharpe = mean / volatility * np.sqrt(periods_per_year) if volatility > 0 else np.inf
@@ -215,8 +227,8 @@ def summarize_backtest(
     summary = _metrics(portfolio_returns, horizon)
     summary.update(
         {
-            "ic": float(daily_ic.mean()),
-            "turnover": float(turnover.mean()),
+            "ic": _as_float(daily_ic.mean()),
+            "turnover": _as_float(turnover.mean()),
             "n_observations": int(portfolio_returns.notna().sum()),
             "runtime_seconds": float(result.get("runtime_seconds", np.nan)),
             "portfolio_returns": portfolio_returns,
@@ -265,9 +277,9 @@ def backtest_alpha(
     signal_centered = signal_rank.sub(signal_rank.mean(axis=1), axis=0)
     return_centered = return_rank.sub(return_rank.mean(axis=1), axis=0)
     numerator = (signal_centered * return_centered).sum(axis=1, min_count=2)
-    denominator = np.sqrt(
+    denominator = (
         signal_centered.pow(2).sum(axis=1) * return_centered.pow(2).sum(axis=1)
-    ).replace(0.0, np.nan)
+    ).pow(0.5).replace(0.0, np.nan)
     daily_ic = numerator / denominator
 
     turnover_series = tradable_weights.diff().abs().sum(axis=1, min_count=1)
@@ -277,8 +289,8 @@ def backtest_alpha(
         sortino=metrics["sortino"],
         max_drawdown=metrics["max_drawdown"],
         annualized_volatility=metrics["annualized_volatility"],
-        ic=float(daily_ic.mean()),
-        turnover=float(turnover_series.mean()),
+        ic=_as_float(daily_ic.mean()),
+        turnover=_as_float(turnover_series.mean()),
         n_observations=int(portfolio_returns.notna().sum()),
         runtime_seconds=float(time.perf_counter() - started),
         portfolio_returns=portfolio_returns,

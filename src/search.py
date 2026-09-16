@@ -319,7 +319,8 @@ def combine_trajectories(
         frames.append(frame)
     combined = pd.concat(frames, ignore_index=True)
     combined["iteration"] = np.arange(len(combined), dtype=int)
-    return _write(combined.to_dict(orient="records"), output_path)
+    records = cast(list[dict[str, object]], combined.to_dict(orient="records"))
+    return _write(records, output_path)
 
 
 def evaluate_out_of_sample(

@@ -23,6 +23,9 @@ import yaml  # type: ignore[import-untyped]
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
 PROCESSED_DIR = ROOT / "data" / "processed"
+# Search artifacts are small, committed evidence: the report cites them, the
+# dashboard reads them, and a reader can audit every published number offline.
+RESULTS_DIR = ROOT / "results"
 CONFIG_PATH = ROOT / "config.yaml"
 CACHE_MAX_AGE_SECONDS: Final = 24 * 60 * 60
 MAX_DOWNLOAD_ATTEMPTS: Final = 5

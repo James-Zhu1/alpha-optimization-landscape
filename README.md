@@ -138,8 +138,8 @@ python -m pytest
 python -m src.search random
 python -m src.search bayesian
 python -m src.search combine
-python -m src.search holdout --trajectory trajectory_combined.parquet
-python -m src.report --trajectory trajectory_combined.parquet
+python -m src.search holdout --trajectory results/trajectory_combined.parquet
+python -m src.report --trajectory results/trajectory_combined.parquet
 streamlit run streamlit_app.py
 ```
 

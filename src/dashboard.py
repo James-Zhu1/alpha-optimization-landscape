@@ -11,16 +11,16 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src.alpha_lib import AlphaExpression
-from src.data_pipeline import ROOT
+from src.data_pipeline import RESULTS_DIR
 from src.landscape import run_clustering, run_pca, run_umap
 from src.trajectory import build_feature_matrix
 
 DATASETS = {
-    "Combined (random + Bayesian)": ROOT / "trajectory_combined.parquet",
-    "Random search": ROOT / "trajectory_db.parquet",
-    "Bayesian search": ROOT / "trajectory_bayesian.parquet",
+    "Combined (random + Bayesian)": RESULTS_DIR / "trajectory_combined.parquet",
+    "Random search": RESULTS_DIR / "trajectory_random.parquet",
+    "Bayesian search": RESULTS_DIR / "trajectory_bayesian.parquet",
 }
-HOLDOUT_PATH = ROOT / "out_of_sample_results.parquet"
+HOLDOUT_PATH = RESULTS_DIR / "out_of_sample_results.parquet"
 METRIC_LABELS = {
     "sharpe": "Validation Sharpe",
     "sortino": "Sortino",

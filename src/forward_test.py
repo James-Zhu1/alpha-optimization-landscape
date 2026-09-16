@@ -40,6 +40,7 @@ from src.backtest import (
 )
 from src.data_pipeline import (
     PROCESSED_DIR,
+    RESULTS_DIR,
     ROOT,
     SP100_TICKERS,
     build_panel,
@@ -50,7 +51,6 @@ from src.search import OUT_OF_SAMPLE_PATH, PUBLIC_METRICS
 
 FORWARD_RAW_DIR = ROOT / "data" / "forward_raw"
 FORWARD_PROCESSED_DIR = ROOT / "data" / "forward_processed"
-RESULTS_DIR = ROOT / "results"
 FORWARD_RESULTS_PATH = RESULTS_DIR / "forward_test.parquet"
 COST_SCENARIOS = (0.0, 1.0, 2.0, 5.0, 10.0, 20.0)
 

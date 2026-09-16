@@ -37,12 +37,12 @@ from src.backtest import (
     sharpe_statistics,
     summarize_backtest,
 )
-from src.data_pipeline import PROCESSED_DIR, ROOT, load_config
+from src.data_pipeline import PROCESSED_DIR, RESULTS_DIR, ROOT, load_config
 
-TRAJECTORY_PATH = ROOT / "trajectory_db.parquet"
-BAYESIAN_TRAJECTORY_PATH = ROOT / "trajectory_bayesian.parquet"
-COMBINED_TRAJECTORY_PATH = ROOT / "trajectory_combined.parquet"
-OUT_OF_SAMPLE_PATH = ROOT / "out_of_sample_results.parquet"
+TRAJECTORY_PATH = RESULTS_DIR / "trajectory_random.parquet"
+BAYESIAN_TRAJECTORY_PATH = RESULTS_DIR / "trajectory_bayesian.parquet"
+COMBINED_TRAJECTORY_PATH = RESULTS_DIR / "trajectory_combined.parquet"
+OUT_OF_SAMPLE_PATH = RESULTS_DIR / "out_of_sample_results.parquet"
 PUBLIC_METRICS = (
     "sharpe",
     "sortino",

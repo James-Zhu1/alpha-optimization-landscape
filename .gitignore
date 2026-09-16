@@ -7,10 +7,13 @@ __pycache__/
 .Rhistory
 data/raw/*.parquet
 data/processed/*.parquet
-trajectory_db.parquet
-trajectory_bayesian.parquet
-trajectory_combined.parquet
-out_of_sample_results.parquet
 .timing_*.parquet
 
-# Report figures are portfolio artifacts and should be committed with REPORT.md.
+# Downloaded panels stay out of version control; they are large and rebuildable
+# from config.yaml. The forward-test cache is regenerated on every refresh.
+data/forward_raw/
+data/forward_processed/
+
+# Figures and results/ are portfolio artifacts and ARE committed. They let a
+# reader verify every number in REPORT.md, and let the dashboard run on a fresh
+# clone, without downloading data or rerunning the 700-evaluation search.

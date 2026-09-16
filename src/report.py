@@ -23,15 +23,15 @@ from matplotlib.axes import Axes
 from numpy.typing import NDArray
 from sklearn.metrics import normalized_mutual_info_score, pairwise_distances
 
-from src.data_pipeline import PROCESSED_DIR, ROOT, load_config
+from src.data_pipeline import PROCESSED_DIR, RESULTS_DIR, ROOT, load_config
 from src.landscape import run_clustering, run_pca, run_umap
 from src.trajectory import build_feature_matrix
 
 FIGURE_DIR = ROOT / "figures"
 REPORT_PATH = ROOT / "REPORT.md"
-OUT_OF_SAMPLE_PATH = ROOT / "out_of_sample_results.parquet"
-RANDOM_TRAJECTORY_PATH = ROOT / "trajectory_db.parquet"
-COMBINED_TRAJECTORY_PATH = ROOT / "trajectory_combined.parquet"
+OUT_OF_SAMPLE_PATH = RESULTS_DIR / "out_of_sample_results.parquet"
+RANDOM_TRAJECTORY_PATH = RESULTS_DIR / "trajectory_random.parquet"
+COMBINED_TRAJECTORY_PATH = RESULTS_DIR / "trajectory_combined.parquet"
 LOGGER = logging.getLogger(__name__)
 
 

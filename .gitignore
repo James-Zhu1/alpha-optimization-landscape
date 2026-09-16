@@ -17,3 +17,6 @@ data/forward_processed/
 # Figures and results/ are portfolio artifacts and ARE committed. They let a
 # reader verify every number in REPORT.md, and let the dashboard run on a fresh
 # clone, without downloading data or rerunning the 700-evaluation search.
+
+# Local editor/agent tooling, not part of the project.
+.claude/
